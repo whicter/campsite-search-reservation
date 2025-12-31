@@ -10,7 +10,7 @@ cd frontend
 # Check if node_modules exists
 if [ ! -d "node_modules" ]; then
     echo "❌ Dependencies not installed!"
-    echo "Please run: npm install"
+    echo "Please run: yarn install"
     exit 1
 fi
 
@@ -25,4 +25,4 @@ echo "✅ Starting React development server on http://localhost:3000"
 echo "Press CTRL+C to stop"
 echo ""
 
-npm start
+yarn start

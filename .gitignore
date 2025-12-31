@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 *.so
 .Python
+campsite-env/
 venv/
 env/
 ENV/

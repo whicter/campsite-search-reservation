@@ -4,14 +4,38 @@ from .camply_provider import CamplyProvider
 # Import custom providers here
 # from .sanmateo_provider import SanMateoProvider
 
-# Registry of all providers
-PROVIDERS = {
-    'ReserveCalifornia': CamplyProvider('ReserveCalifornia'),
-    'RecreationDotGov': CamplyProvider('RecreationDotGov'),
-    'GoingToCamp': CamplyProvider('GoingToCamp'),
-    # Add custom providers:
-    # 'SanMateoCounty': SanMateoProvider(),
-}
+# Dynamically import all providers from camply
+try:
+    from camply import providers as camply_providers
+
+    # Get all camply provider names (excluding base classes and utilities)
+    CAMPLY_PROVIDER_NAMES = [
+        name for name in camply_providers.__all__
+        if name not in ['BaseProvider', 'ProviderType']
+        and not name.startswith('RecreationDotGov')  # Exclude specialized RecDotGov variants
+        or name == 'RecreationDotGov'  # But keep the main RecreationDotGov
+    ]
+
+    # Create provider registry dynamically
+    PROVIDERS = {
+        name: CamplyProvider(name)
+        for name in CAMPLY_PROVIDER_NAMES
+    }
+
+    print(f"✅ Loaded {len(PROVIDERS)} camply providers: {', '.join(sorted(PROVIDERS.keys()))}")
+
+except ImportError as e:
+    print(f"⚠️  Warning: Could not import camply providers: {e}")
+    # Fallback to manual list
+    PROVIDERS = {
+        'RecreationDotGov': CamplyProvider('RecreationDotGov'),
+        'Yellowstone': CamplyProvider('Yellowstone'),
+        'GoingToCamp': CamplyProvider('GoingToCamp'),
+        'ReserveCalifornia': CamplyProvider('ReserveCalifornia'),
+    }
+
+# Add custom providers here:
+# PROVIDERS['SanMateoCounty'] = SanMateoProvider()
 
 
 def get_provider(name: str) -> BaseProvider:

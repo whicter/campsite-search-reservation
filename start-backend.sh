@@ -8,15 +8,15 @@ echo "🚀 Starting Campsite Search Backend..."
 cd backend
 
 # Check if virtual environment exists
-if [ ! -d "venv" ]; then
+if [ ! -d "campsite-env" ]; then
     echo "❌ Virtual environment not found!"
-    echo "Please run: python -m venv venv"
+    echo "Please run: python -m venv campsite-env"
     exit 1
 fi
 
 # Activate virtual environment
 echo "📦 Activating virtual environment..."
-source venv/bin/activate
+source campsite-env/bin/activate
 
 # Check if dependencies are installed
 if ! python -c "import fastapi" 2>/dev/null; then

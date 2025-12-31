@@ -274,7 +274,7 @@ Expected: List of available date ranges or "No availability found"
 
 For production:
 - Use gunicorn/uvicorn workers for backend
-- Build React app (`npm run build`)
+- Build React app (`yarn build`)
 - Use nginx for frontend
 - Add HTTPS
 - Configure CORS for production domain

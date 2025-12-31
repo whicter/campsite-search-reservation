@@ -10,7 +10,9 @@ from .models import (
     AvailabilityRequest,
     AvailabilityResponse,
     AvailabilityResult,
-    ProviderInfo
+    ProviderInfo,
+    MultiCampgroundAvailabilityRequest,
+    MultiCampgroundAvailabilityResponse
 )
 from .providers import get_provider, list_providers
 
@@ -101,49 +103,38 @@ async def search_campgrounds(provider: str, search: str):
 @app.post("/api/availability", response_model=AvailabilityResponse)
 async def search_availability(request: AvailabilityRequest):
     """
-    Search for available date ranges
+    Check availability for specific dates
 
-    This endpoint scans through the next N days (default 365) and finds all
-    consecutive date ranges where the campground is available for the specified
-    number of nights.
+    This endpoint checks if a campground is available for the specified
+    date range (from start_date to end_date).
 
     Args:
-        request: Availability search parameters
+        request: Availability search parameters (provider, campground_id, start_date, end_date)
 
     Returns:
-        All available date combinations
+        Availability status for the requested dates
     """
     try:
         provider_instance = get_provider(request.provider)
 
-        # Generate all possible date ranges
-        today = date.today()
-        results = []
+        # Parse dates
+        from datetime import datetime
+        start = datetime.strptime(request.start_date, '%Y-%m-%d').date()
+        end = datetime.strptime(request.end_date, '%Y-%m-%d').date()
 
-        # Scan through search_days
-        for day_offset in range(request.search_days):
-            start = today + timedelta(days=day_offset)
-            end = start + timedelta(days=request.nights)
+        # Validate dates
+        if start >= end:
+            raise HTTPException(status_code=400, detail="End date must be after start date")
+        if start < date.today():
+            raise HTTPException(status_code=400, detail="Start date cannot be in the past")
 
-            # Check availability for this date range
-            availability = provider_instance.get_availability(
-                request.campground_id,
-                start,
-                end
-            )
-
-            results.append(
-                AvailabilityResult(
-                    start_date=start.strftime('%Y-%m-%d'),
-                    end_date=end.strftime('%Y-%m-%d'),
-                    available=availability.get('available', False),
-                    site_id=availability.get('site_id'),
-                    site_name=availability.get('site_name')
-                )
-            )
-
-        # Filter to only available dates
-        available_results = [r for r in results if r.available]
+        # Check availability for this date range
+        availability = provider_instance.get_availability(
+            request.campground_id,
+            start,
+            end,
+            nights=request.nights
+        )
 
         # Get campground name (from first search result)
         campground_info = provider_instance.search_campgrounds(request.campground_id)
@@ -152,13 +143,137 @@ async def search_availability(request: AvailabilityRequest):
             else f"Campground {request.campground_id}"
         )
 
+        is_available = availability.get('available', False)
+
+        # Generate message
+        nights = (end - start).days
+        if is_available:
+            message = f"Available for {nights} night(s) from {request.start_date} to {request.end_date}"
+        else:
+            # Check if there was an error
+            if 'error_message' in availability:
+                message = availability['error_message']
+            else:
+                message = f"Not available for {nights} night(s) from {request.start_date} to {request.end_date}"
+
         return AvailabilityResponse(
             campground_id=request.campground_id,
             campground_name=campground_name,
             provider=request.provider,
+            start_date=request.start_date,
+            end_date=request.end_date,
+            available=is_available,
+            message=message,
+            reservation_url=availability.get('reservation_url'),
             nights=request.nights,
-            results=available_results,
-            total_available=len(available_results)
+            availability_details=availability.get('availability_details')
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error checking availability: {str(e)}")
+
+
+@app.post("/api/availability/search", response_model=MultiCampgroundAvailabilityResponse)
+async def search_multi_campground_availability(request: MultiCampgroundAvailabilityRequest):
+    """
+    Search availability across all campgrounds matching a name
+
+    This endpoint:
+    1. Searches for all campgrounds matching the name query
+    2. Checks availability for each campground
+    3. Returns aggregated results
+
+    Args:
+        request: Multi-campground search parameters
+
+    Returns:
+        Aggregated availability results for all matching campgrounds
+    """
+    try:
+        provider_instance = get_provider(request.provider)
+
+        # Step 1: Search for all matching campgrounds
+        campgrounds = provider_instance.search_campgrounds(request.campground_name)
+
+        if not campgrounds:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No campgrounds found for '{request.campground_name}'"
+            )
+
+        print(f"\n🔍 Found {len(campgrounds)} campground(s) matching '{request.campground_name}':")
+        for cg in campgrounds:
+            print(f"   - {cg['name']} (ID: {cg['id']})")
+
+        # Parse dates
+        from datetime import datetime
+        start = datetime.strptime(request.start_date, '%Y-%m-%d').date()
+        end = datetime.strptime(request.end_date, '%Y-%m-%d').date()
+
+        # Validate dates
+        if start >= end:
+            raise HTTPException(status_code=400, detail="End date must be after start date")
+        if start < date.today():
+            raise HTTPException(status_code=400, detail="Start date cannot be in the past")
+
+        # Step 2: Check availability for each campground
+        results = []
+        for campground in campgrounds:
+            print(f"\n🔍 Checking availability for {campground['name']} (ID: {campground['id']})...")
+
+            availability = provider_instance.get_availability(
+                campground['id'],
+                start,
+                end,
+                nights=request.nights
+            )
+
+            is_available = availability.get('available', False)
+
+            # Generate message based on search mode
+            if request.search_mode == "range" and request.nights:
+                if is_available:
+                    message = f"Found available {request.nights}-night stays in range {request.start_date} to {request.end_date}"
+                else:
+                    if 'error_message' in availability:
+                        message = availability['error_message']
+                    else:
+                        message = f"No {request.nights}-night stays available in range {request.start_date} to {request.end_date}"
+            else:
+                nights = (end - start).days
+                if is_available:
+                    message = f"Available for {nights} night(s) from {request.start_date} to {request.end_date}"
+                else:
+                    if 'error_message' in availability:
+                        message = availability['error_message']
+                    else:
+                        message = f"Not available for {nights} night(s) from {request.start_date} to {request.end_date}"
+
+            results.append(AvailabilityResponse(
+                campground_id=campground['id'],
+                campground_name=campground['name'],
+                provider=request.provider,
+                start_date=request.start_date,
+                end_date=request.end_date,
+                available=is_available,
+                message=message,
+                reservation_url=availability.get('reservation_url'),
+                nights=request.nights,
+                availability_details=availability.get('availability_details')
+            ))
+
+        # Count campgrounds with availability
+        available_count = sum(1 for r in results if r.available)
+
+        return MultiCampgroundAvailabilityResponse(
+            provider=request.provider,
+            search_query=request.campground_name,
+            search_mode=request.search_mode,
+            results=results,
+            total_campgrounds_searched=len(campgrounds),
+            campgrounds_with_availability=available_count
         )
 
     except ValueError as e:

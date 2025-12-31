@@ -114,8 +114,8 @@ campsite-search-resevation/
 
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python -m venv campsite-env
+source campsite-env/bin/activate  # On Windows: campsite-env\Scripts\activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
@@ -126,8 +126,8 @@ Backend will run on `http://localhost:8000`
 
 ```bash
 cd frontend
-npm install
-npm start
+yarn install
+yarn start
 ```
 
 Frontend will run on `http://localhost:3000`

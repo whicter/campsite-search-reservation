@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import date
 
 
@@ -15,8 +15,9 @@ class AvailabilityRequest(BaseModel):
     """Request for availability search"""
     provider: str
     campground_id: str
-    nights: int
-    search_days: int = 365
+    start_date: str  # YYYY-MM-DD format
+    end_date: str    # YYYY-MM-DD format
+    nights: Optional[int] = None  # If specified, search for consecutive nights within range
 
 
 class AvailabilityResult(BaseModel):
@@ -28,14 +29,46 @@ class AvailabilityResult(BaseModel):
     site_name: Optional[str] = None
 
 
+class AvailabilityDetails(BaseModel):
+    """Detailed availability information for range searches"""
+    available_dates: List[Dict[str, Any]] = []
+    campsites: Optional[List[Dict[str, Any]]] = None
+    total_dates: int = 0
+    total_unique_sites: int = 0
+
+
 class AvailabilityResponse(BaseModel):
-    """Response containing all available date ranges"""
+    """Response containing availability for requested dates"""
     campground_id: str
     campground_name: str
     provider: str
-    nights: int
-    results: List[AvailabilityResult]
-    total_available: int
+    start_date: str
+    end_date: str
+    available: bool
+    message: Optional[str] = None
+    reservation_url: Optional[str] = None
+    nights: Optional[int] = None  # Number of nights if range search
+    availability_details: Optional[AvailabilityDetails] = None  # Detailed info for range searches
+
+
+class MultiCampgroundAvailabilityRequest(BaseModel):
+    """Request for searching multiple campgrounds"""
+    provider: str
+    campground_name: str  # Search query for campground name
+    start_date: str
+    end_date: str
+    nights: Optional[int] = None
+    search_mode: str = "exact"  # "exact" or "range"
+
+
+class MultiCampgroundAvailabilityResponse(BaseModel):
+    """Response with results from multiple campgrounds"""
+    provider: str
+    search_query: str
+    search_mode: str
+    results: List[AvailabilityResponse]
+    total_campgrounds_searched: int
+    campgrounds_with_availability: int
 
 
 class ProviderInfo(BaseModel):

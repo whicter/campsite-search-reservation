@@ -33,29 +33,14 @@ function App() {
     setResults(null);
 
     try {
-      // First, search for campgrounds
-      const campgroundsResponse = await axios.get(`${API_URL}/api/campgrounds`, {
-        params: {
-          provider: searchParams.provider,
-          search: searchParams.campgroundName
-        }
-      });
-
-      if (campgroundsResponse.data.length === 0) {
-        setError(`No campgrounds found for "${searchParams.campgroundName}"`);
-        setLoading(false);
-        return;
-      }
-
-      // Use the first campground result
-      const campground = campgroundsResponse.data[0];
-
-      // Now search for availability
-      const availabilityResponse = await axios.post(`${API_URL}/api/availability`, {
+      // Use the new multi-campground search API
+      const availabilityResponse = await axios.post(`${API_URL}/api/availability/search`, {
         provider: searchParams.provider,
-        campground_id: campground.id,
-        nights: parseInt(searchParams.nights),
-        search_days: 365
+        campground_name: searchParams.campgroundName,
+        start_date: searchParams.startDate,
+        end_date: searchParams.endDate,
+        nights: searchParams.searchMode === 'range' ? searchParams.nights : null,
+        search_mode: searchParams.searchMode
       });
 
       setResults(availabilityResponse.data);

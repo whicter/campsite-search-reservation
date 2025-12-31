@@ -16,7 +16,7 @@ Before you begin, ensure you have the following installed:
 ```bash
 python --version   # Should be 3.9+
 node --version     # Should be 16+
-npm --version
+yarn --version
 camply --version   # Should show camply is installed
 ```
 
@@ -34,22 +34,22 @@ cd /Users/cohan/Documents/campsite-search-resevation
 
 ```bash
 cd backend
-python -m venv venv
+python -m venv campsite-env
 ```
 
 ### 2.2 Activate Virtual Environment
 
 **On macOS/Linux:**
 ```bash
-source venv/bin/activate
+source campsite-env/bin/activate
 ```
 
 **On Windows:**
 ```bash
-venv\Scripts\activate
+campsite-env\Scripts\activate
 ```
 
-You should see `(venv)` in your terminal prompt.
+You should see `(campsite-env)` in your terminal prompt.
 
 ### 2.3 Install Dependencies
 
@@ -108,7 +108,7 @@ cd /Users/cohan/Documents/campsite-search-resevation/frontend
 ### 3.2 Install Dependencies
 
 ```bash
-npm install
+yarn install
 ```
 
 This will install:
@@ -131,7 +131,7 @@ REACT_APP_API_URL=http://localhost:8000
 ### 3.4 Start Frontend
 
 ```bash
-npm start
+yarn start
 ```
 
 This will:
@@ -170,8 +170,8 @@ If everything is set up correctly, you should see a search in progress.
 
 ### Frontend Issues
 
-**Issue: `npm: command not found`**
-- Solution: Install Node.js from https://nodejs.org/
+**Issue: `yarn: command not found`**
+- Solution: Install Yarn with `npm install -g yarn` or from https://yarnpkg.com/
 
 **Issue: `Failed to fetch providers`**
 - Solution: Make sure backend is running on `http://localhost:8000`
@@ -205,7 +205,7 @@ gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 ### Frontend
 
 ```bash
-npm run build
+yarn build
 # Serve the build/ directory with nginx or similar
 ```
 

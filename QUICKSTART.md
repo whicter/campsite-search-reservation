@@ -17,10 +17,10 @@ Don't have them? See [SETUP.md](SETUP.md) for installation instructions.
 cd /Users/cohan/Documents/campsite-search-resevation/backend
 
 # Create virtual environment
-python -m venv venv
+python -m venv campsite-env
 
 # Activate it (macOS/Linux)
-source venv/bin/activate
+source campsite-env/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
@@ -44,13 +44,13 @@ Open a **new terminal window**, then:
 cd /Users/cohan/Documents/campsite-search-resevation/frontend
 
 # Install dependencies
-npm install
+yarn install
 
 # Copy environment file
 cp .env.example .env
 
 # Start frontend
-npm start
+yarn start
 ```
 
 **Expected:** Browser opens to `http://localhost:3000` ✅
@@ -84,14 +84,14 @@ Instead of manual commands, use the scripts:
 **"ModuleNotFoundError: No module named 'fastapi'"**
 → Run `pip install -r requirements.txt` in backend/
 
-**"npm: command not found"**
-→ Install Node.js from https://nodejs.org
+**"yarn: command not found"**
+→ Install Yarn: `npm install -g yarn` or from https://yarnpkg.com
 
 **"Port 8000 already in use"**
 → Kill the process: `lsof -ti:8000 | xargs kill -9`
 
 **Backend won't start**
-→ Make sure virtual environment is activated (you should see `(venv)` in prompt)
+→ Make sure virtual environment is activated (you should see `(campsite-env)` in prompt)
 
 **Frontend can't connect to backend**
 → Check `http://localhost:8000` in browser - should see API info
