@@ -7,3 +7,16 @@ requests>=2.31.0
 beautifulsoup4>=4.12.0
 lxml>=4.9.0
 python-multipart>=0.0.6
+
+# Database
+sqlalchemy>=2.0.0
+alembic>=1.12.0
+psycopg2-binary>=2.9.9
+
+# Task Queue
+rq>=1.15.0
+redis>=5.0.0
+
+# Authentication
+passlib[bcrypt]>=1.7.4
+python-jose[cryptography]>=3.3.0

@@ -15,6 +15,7 @@ from .models import (
     MultiCampgroundAvailabilityResponse
 )
 from .providers import get_provider, list_providers
+from .routers import auth, monitoring
 
 # Load environment variables
 load_dotenv()
@@ -22,9 +23,13 @@ load_dotenv()
 # Create FastAPI app
 app = FastAPI(
     title="Campsite Search API",
-    description="Search for available campsites across multiple providers",
-    version="1.0.0"
+    description="Search for available campsites across multiple providers with monitoring support",
+    version="2.0.0"
 )
+
+# Include routers
+app.include_router(auth.router)
+app.include_router(monitoring.router)
 
 # Configure CORS
 app.add_middleware(
@@ -41,11 +46,13 @@ async def root():
     """Root endpoint"""
     return {
         "message": "Campsite Search API",
-        "version": "1.0.0",
+        "version": "2.0.0",
         "endpoints": {
             "providers": "/api/providers",
             "campgrounds": "/api/campgrounds",
-            "availability": "/api/availability"
+            "availability": "/api/availability",
+            "auth": "/auth",
+            "monitoring": "/monitoring"
         }
     }
 
