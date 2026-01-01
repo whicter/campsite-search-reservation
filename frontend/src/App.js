@@ -1,92 +1,119 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Navbar from './components/Navbar/Navbar';
+import Login from './components/Auth/Login';
+import Register from './components/Auth/Register';
+import Dashboard from './pages/Dashboard/Dashboard';
+import SearchPage from './pages/Search/SearchPage';
+import MonitoringTasks from './pages/Monitoring/MonitoringTasks';
+import Favorites from './pages/Favorites/Favorites';
+import AdminDashboard from './pages/Admin/AdminDashboard';
 import './App.css';
-import SearchForm from './components/SearchForm';
-import ResultsDisplay from './components/ResultsDisplay';
-import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
 
-function App() {
-  const [providers, setProviders] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState(null);
-  const [error, setError] = useState(null);
+  if (loading) {
+    return (
+      <div className="loading-page">
+        <div className="spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
-  // Load providers on mount
-  useEffect(() => {
-    loadProviders();
-  }, []);
+  return isAuthenticated ? children : <Navigate to="/login" />;
+};
 
-  const loadProviders = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/api/providers`);
-      setProviders(response.data);
-    } catch (err) {
-      console.error('Error loading providers:', err);
-      setError('Failed to load providers. Make sure the backend is running.');
-    }
-  };
+// Admin Route Component
+const AdminRoute = ({ children }) => {
+  const { isAuthenticated, isAdmin, loading } = useAuth();
 
-  const handleSearch = async (searchParams) => {
-    setLoading(true);
-    setError(null);
-    setResults(null);
+  if (loading) {
+    return (
+      <div className="loading-page">
+        <div className="spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
-    try {
-      // Use the new multi-campground search API
-      const availabilityResponse = await axios.post(`${API_URL}/api/availability/search`, {
-        provider: searchParams.provider,
-        campground_name: searchParams.campgroundName,
-        start_date: searchParams.startDate,
-        end_date: searchParams.endDate,
-        nights: searchParams.searchMode === 'range' ? searchParams.nights : null,
-        search_mode: searchParams.searchMode
-      });
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
 
-      setResults(availabilityResponse.data);
-    } catch (err) {
-      console.error('Error searching:', err);
-      setError(
-        err.response?.data?.detail ||
-        'Failed to search for availability. Please try again.'
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (!isAdmin()) {
+    return (
+      <div className="access-denied">
+        <h1>🔒 Access Denied</h1>
+        <p>You don't have permission to access this page.</p>
+        <p>Only administrators can view the admin dashboard.</p>
+      </div>
+    );
+  }
 
+  return children;
+};
+
+function AppContent() {
   return (
     <div className="App">
-      <div className="container">
-        <header className="header">
-          <h1>⛺ Campsite Search</h1>
-          <p>Find available campsites across multiple reservation systems</p>
-        </header>
+      <Navbar />
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<SearchPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-        <SearchForm
-          providers={providers}
-          onSearch={handleSearch}
-          loading={loading}
+        {/* Protected Routes */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/monitoring"
+          element={
+            <ProtectedRoute>
+              <MonitoringTasks />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/favorites"
+          element={
+            <ProtectedRoute>
+              <Favorites />
+            </ProtectedRoute>
+          }
         />
 
-        {error && (
-          <div className="error-message">
-            <strong>Error:</strong> {error}
-          </div>
-        )}
-
-        {loading && (
-          <div className="loading">
-            <div className="spinner"></div>
-            <p>Searching for availability... This may take a moment.</p>
-          </div>
-        )}
-
-        {results && !loading && (
-          <ResultsDisplay results={results} />
-        )}
-      </div>
+        {/* Admin Routes */}
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          }
+        />
+      </Routes>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </Router>
   );
 }
 

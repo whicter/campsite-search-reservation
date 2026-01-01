@@ -2,6 +2,7 @@
 
 ## 目录
 - [开发环境设置](#开发环境设置)
+- [启动脚本详解](#启动脚本详解) ⭐ 必读
 - [项目结构](#项目结构)
 - [开发工作流](#开发工作流)
 - [数据库操作](#数据库操作)
@@ -65,6 +66,146 @@ EMAIL_PASSWORD=your-app-password
 # API Configuration
 API_HOST=0.0.0.0
 API_PORT=8000
+```
+
+---
+
+## 启动脚本详解
+
+### 📋 脚本概览
+
+| 脚本 | 功能 | 运行方式 |
+|------|------|---------|
+| `start_infrastructure.sh` | 启动 PostgreSQL & Redis | 一次性执行 |
+| `start_api.sh` | 启动 FastAPI 服务器 | 前台运行（终端 1） |
+| `start_worker.sh` | 启动 RQ Worker | 前台运行（终端 2） |
+| `stop_services.sh` | 停止应用服务 | 一次性执行 |
+
+### 🚀 推荐启动流程
+
+**终端 1：启动基础设施**
+```bash
+./start_infrastructure.sh
+```
+
+**终端 2：启动 API**
+```bash
+./start_api.sh
+# 保持运行，实时查看 API 日志
+```
+
+**终端 3：启动 Worker**
+```bash
+./start_worker.sh
+# 保持运行，实时查看任务日志
+```
+
+### ⚠️ 为什么使用前台运行？
+
+**问题背景**：Camply CLI 工具会根据运行环境调整输出格式
+
+**TTY 环境（前台）- 正确格式**：
+```
+⛰  New Brighton SB (#685) - 🏕  Campground Northern End (ID: 598)
+```
+
+**非 TTY 环境（后台重定向）- 格式变化**：
+```bash
+# 后台运行
+python -m app.main > logs/api_server.log 2>&1 &
+
+# camply 检测到非交互式环境，改变输出格式：
+⛰  New Brighton SB (ID: 685 - 🏕  Campground)
+Northern End (sites 44-111) (ID: 598)
+
+# 导致解析错误：
+ValueError: invalid literal for int() with base 10: '685 - 🏕  Campground'
+```
+
+**解决方案**：前台运行保持 TTY 环境，camply 使用一致的输出格式。
+
+### 📊 服务依赖关系
+
+```
+基础设施层（系统服务，长期运行）
+├── PostgreSQL (brew services)
+└── Redis (brew services)
+         │
+         ▼
+应用层（前台进程，开发时运行）
+├── FastAPI Server (start_api.sh)
+└── RQ Worker (start_worker.sh)
+```
+
+**启动顺序**：
+1. PostgreSQL & Redis（基础设施）
+2. FastAPI（依赖数据库和 Redis）
+3. RQ Worker（依赖 Redis 队列）
+
+### 🛠️ 脚本详细说明
+
+#### start_infrastructure.sh
+
+检查并启动 PostgreSQL 和 Redis：
+```bash
+# 自动执行
+brew services start postgresql@15  # 如未运行
+brew services start redis          # 如未运行
+```
+
+#### start_api.sh
+
+启动 FastAPI 服务器：
+```bash
+# 内部执行
+lsof -ti:8000 | xargs kill -9  # 清理端口
+./campsite-env/bin/python -m app.main  # 前台运行
+```
+
+特点：
+- ✅ 自动检查依赖服务
+- ✅ 自动清理端口占用
+- ✅ 前台运行，实时日志
+
+#### start_worker.sh
+
+启动 RQ Worker：
+```bash
+# 内部执行
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+./campsite-env/bin/rq worker monitoring --url redis://localhost:6379/0
+```
+
+特点：
+- ✅ 自动设置 macOS 环境变量
+- ✅ 前台运行，实时任务日志
+
+#### stop_services.sh
+
+停止应用服务：
+```bash
+lsof -ti:8000 | xargs kill -9  # 停止 API
+pkill -f "rq worker"           # 停止 Worker
+# PostgreSQL 和 Redis 保持运行
+```
+
+### 💡 快速命令
+
+```bash
+# 查看服务状态
+brew services list | grep -E "postgresql|redis"
+lsof -i:8000
+pgrep -f "rq worker"
+
+# 手动启动/停止基础设施
+brew services start postgresql@15
+brew services start redis
+brew services stop postgresql@15
+brew services stop redis
+
+# 测试连接
+psql campsite_db -c "SELECT version();"
+redis-cli ping
 ```
 
 ---

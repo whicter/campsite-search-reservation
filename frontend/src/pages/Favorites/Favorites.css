@@ -1,0 +1,56 @@
+.favorites-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  min-height: calc(100vh - 80px);
+}
+
+.coming-soon {
+  text-align: center;
+  padding: 80px 20px;
+  background: white;
+  border: 2px dashed #e0e0e0;
+  border-radius: 12px;
+}
+
+.coming-soon-icon {
+  font-size: 6rem;
+  margin-bottom: 30px;
+}
+
+.coming-soon h2 {
+  margin: 0 0 15px 0;
+  color: #333;
+}
+
+.coming-soon p {
+  margin: 0 0 40px 0;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.feature-list {
+  text-align: left;
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 30px;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.feature-list h3 {
+  margin: 0 0 20px 0;
+  color: #333;
+}
+
+.feature-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.feature-list li {
+  padding: 10px 0;
+  color: #666;
+  font-size: 1.05rem;
+}

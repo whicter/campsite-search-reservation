@@ -51,14 +51,15 @@ backend/
 ├── requirements.txt              # Python 依赖
 │
 ├── setup_services.sh             # 一键安装脚本
-├── start_services.sh             # 启动服务脚本
-├── stop_services.sh              # 停止服务脚本
+├── start_infrastructure.sh       # 启动基础设施（PostgreSQL & Redis）
+├── start_api.sh                  # 启动 FastAPI 服务器
+├── start_worker.sh               # 启动 RQ Worker
+├── stop_services.sh              # 停止应用服务
 │
 └── 📚 文档/
-    ├── README.md                 # 本文档
-    ├── SETUP_INSTRUCTIONS.md     # 安装指南
+    ├── README.md                 # 项目概览和快速开始
+    ├── DEVELOPER.md              # 开发者指南（启动脚本、调试）⭐
     ├── API_USAGE.md              # API 使用文档
-    ├── DEVELOPER.md              # 开发者文档
     └── DESIGN.md                 # 系统设计文档
 ```
 
@@ -75,11 +76,43 @@ cd backend
 
 ### 2. 启动服务
 
+#### 方法 1：推荐方式（避免 camply 输出格式问题）
+
+**第一步：启动基础设施服务**
 ```bash
-./start_services.sh
+./start_infrastructure.sh
+```
+这会启动 PostgreSQL 和 Redis。
+
+**第二步：启动应用服务（打开两个终端窗口）**
+
+终端 1 - 启动 FastAPI 服务器：
+```bash
+cd backend
+./start_api.sh
 ```
 
-启动 FastAPI 服务器和 RQ Worker。
+终端 2 - 启动 RQ Worker：
+```bash
+cd backend
+./start_worker.sh
+```
+
+**优势**：
+- ✅ 避免 camply CLI 输出格式解析问题
+- ✅ 实时查看日志输出
+- ✅ 方便调试和监控
+
+#### 方法 2：后台模式（快速但可能有解析问题）
+
+```bash
+./start_infrastructure.sh
+# 然后手动后台启动 API 和 Worker
+PATH="$(pwd)/campsite-env/bin:$PATH" ./campsite-env/bin/python -m app.main > logs/api_server.log 2>&1 &
+PATH="$(pwd)/campsite-env/bin:$PATH" OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES ./campsite-env/bin/rq worker monitoring --url redis://localhost:6379/0 > logs/rq_worker.log 2>&1 &
+```
+
+⚠️ **注意**：后台模式可能导致 camply 输出格式变化，影响营地搜索结果解析。
 
 ### 3. 访问 API
 
@@ -90,6 +123,15 @@ cd backend
 
 ```bash
 ./stop_services.sh
+```
+
+这会停止 FastAPI 和 RQ Worker，但保持 PostgreSQL 和 Redis 运行。
+
+如需停止所有服务：
+```bash
+./stop_services.sh
+brew services stop postgresql@15
+brew services stop redis
 ```
 
 ## 📖 使用示例
@@ -184,12 +226,75 @@ KEYS rq:*
 
 ### 查看日志
 
+所有服务日志存储在 `logs/` 目录：
+
+```
+logs/
+├── api_server.log    # FastAPI 服务器日志
+└── rq_worker.log     # RQ Worker 后台任务日志
+```
+
+#### 实时查看日志（推荐）
+
 ```bash
-# API 服务器日志
+# 实时查看 API 服务器日志
 tail -f logs/api_server.log
 
-# RQ Worker 日志
+# 实时查看 RQ Worker 日志
 tail -f logs/rq_worker.log
+
+# 同时查看两个日志
+tail -f logs/api_server.log logs/rq_worker.log
+
+# 按 Ctrl+C 退出
+```
+
+#### 查看历史日志
+
+```bash
+# 查看最后 100 行
+tail -100 logs/api_server.log
+
+# 查看最后 50 行
+tail -50 logs/rq_worker.log
+
+# 查看完整日志
+cat logs/api_server.log
+
+# 使用 less 分页查看
+less logs/api_server.log
+```
+
+#### 搜索和过滤日志
+
+```bash
+# 搜索错误信息
+grep -i "error" logs/api_server.log
+
+# 搜索特定营地
+grep "New Brighton" logs/api_server.log
+
+# 搜索并显示上下文（前后各 3 行）
+grep -C 3 "error" logs/api_server.log
+
+# 搜索多个文件
+grep -i "failed" logs/*.log
+
+# 实时搜索
+tail -f logs/api_server.log | grep "campsite"
+```
+
+#### 日志分析示例
+
+```bash
+# 统计 API 请求数
+grep "HTTP" logs/api_server.log | wc -l
+
+# 查看今天的错误
+grep "$(date +%Y-%m-%d)" logs/api_server.log | grep -i error
+
+# 查看最近的 POST 请求
+grep "POST" logs/api_server.log | tail -20
 ```
 
 详细调试指南请查看 [DEVELOPER.md](./DEVELOPER.md)
@@ -297,9 +402,9 @@ pytest tests/
 
 | 文档 | 描述 |
 |------|------|
-| [SETUP_INSTRUCTIONS.md](../SETUP_INSTRUCTIONS.md) | 详细安装指南 |
+| [README.md](./README.md) | 项目概览和快速开始 |
+| [DEVELOPER.md](./DEVELOPER.md) | **开发者指南（启动脚本、调试、数据库）** ⭐ |
 | [API_USAGE.md](./API_USAGE.md) | API 端点说明和使用示例 |
-| [DEVELOPER.md](./DEVELOPER.md) | 开发者指南（调试、数据库、队列监控） |
 | [DESIGN.md](./DESIGN.md) | 系统设计文档（架构、数据流程、扩展性） |
 
 ## 🐛 问题排查
@@ -362,6 +467,7 @@ MIT License
 
 **开始使用**:
 1. 运行 `./setup_services.sh` 安装
-2. 运行 `./start_services.sh` 启动
-3. 访问 http://localhost:8000/docs 查看 API 文档
-4. 阅读 [API_USAGE.md](./API_USAGE.md) 学习使用
+2. 运行 `./start_infrastructure.sh` 启动基础设施
+3. 在两个终端分别运行 `./start_api.sh` 和 `./start_worker.sh`
+4. 访问 http://localhost:8000/docs 查看 API 文档
+5. 阅读 [API_USAGE.md](./API_USAGE.md) 学习使用

@@ -27,18 +27,18 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# Include routers
-app.include_router(auth.router)
-app.include_router(monitoring.router)
-
-# Configure CORS
+# Configure CORS - Must be added before routers
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:3000").split(","),
+    allow_origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3005"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(auth.router)
+app.include_router(monitoring.router)
 
 
 @app.get("/")

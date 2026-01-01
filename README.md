@@ -1,227 +1,311 @@
-# Campsite Search & Reservation System
+# Campsite Search & Monitoring System
 
-A web application to search for available campsites across multiple reservation systems with a unified interface.
+一个全功能的营地搜索和自动监控系统，帮助你找到并预订心仪的营地。
 
-## Overview
+## 🌟 主要功能
 
-This application provides a simple UI to search for campsite availability by entering:
-- Campground name
-- Provider (ReserveCalifornia, Recreation.gov, etc.)
-- Number of nights
+### ✅ 即时搜索
+- 搜索多个营地供应商（RecreationDotGov, ReserveCalifornia 等）
+- 检查特定日期的营地可用性
+- 多营地批量搜索
+- 精确日期和范围搜索模式
 
-The system will return all available date combinations, e.g., for "New Brighton SB, 3 nights":
-- 3/12 - 3/15
-- 3/13 - 3/16
-- etc.
+### ✅ 自动监控
+- 创建监控任务，自动检查营地可用性
+- 后台任务队列处理
+- 用户认证和授权（JWT）
+- 任务状态管理（活跃、暂停、完成、取消）
+- 通知历史记录
 
-## Architecture
+### ✅ 管理界面
+- React 前端用户界面
+- 用户认证系统
+- 监控任务管理
+- Admin 后台监控
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    React Frontend (UI)                       │
-│  - Campground search                                         │
-│  - Provider dropdown                                         │
-│  - Date range results display                                │
-└────────────────────────┬────────────────────────────────────┘
-                         │ REST API
-┌────────────────────────▼────────────────────────────────────┐
-│              Python FastAPI Backend                          │
-│                                                               │
-│  ┌──────────────────┐         ┌─────────────────────────┐   │
-│  │  Camply Provider │         │  Custom Crawlers        │   │
-│  │  Integration     │         │  (Plugin Architecture)  │   │
-│  ├──────────────────┤         ├─────────────────────────┤   │
-│  │ - ReserveCalifornia        │ - San Mateo County      │   │
-│  │ - Recreation.gov │         │ - Other custom systems  │   │
-│  │ - GoingToCamp    │         │ - Extensible            │   │
-│  └──────────────────┘         └─────────────────────────┘   │
-└───────────────────────────────────────────────────────────────┘
-```
+## 🏗️ 技术栈
 
-## Why Python Backend?
+**后端：**
+- Python 3.12+
+- FastAPI (REST API)
+- PostgreSQL 15 (数据库)
+- Redis (缓存/队列)
+- RQ (后台任务队列)
+- SQLAlchemy 2.0 (ORM)
+- Alembic (数据库迁移)
+- Camply CLI (营地数据源)
 
-### For Camply-Supported Providers
-- **Direct API access**: Use camply Python library directly (not CLI)
-- **Better performance**: No subprocess overhead
-- **Structured data**: Native Python objects, no text parsing
-- **Error handling**: Proper exception handling
+**前端：**
+- React 18
+- React Router
+- Axios
 
-### For Custom Providers (Not Supported by Camply)
-- **Rich ecosystem**: Python has excellent web scraping libraries
-  - `requests` - HTTP client
-  - `BeautifulSoup` - HTML parsing
-  - `Playwright` - Dynamic content handling
-- **Unified codebase**: All crawlers in same language
-- **Easy maintenance**: Add new providers as plugins
-
-### Plugin Architecture
-Each provider is an independent module:
-- Camply-supported → Use camply library
-- Custom systems → Write custom crawler
-- Future providers → Easy to add
-
-## Technology Stack
-
-### Backend
-- **Python 3.9+**
-- **FastAPI** - Modern async web framework
-- **camply** - Campsite availability library
-- **requests** - HTTP client for custom crawlers
-
-### Frontend
-- **React** - UI framework
-- **Axios** - HTTP client
-- **Tailwind CSS** - Styling (optional)
-
-## Project Structure
+## 📁 项目结构
 
 ```
 campsite-search-resevation/
-├── backend/
-│   ├── app/
-│   │   ├── __init__.py
-│   │   ├── main.py              # FastAPI application
-│   │   ├── providers/           # Provider plugins
-│   │   │   ├── __init__.py
-│   │   │   ├── base.py          # Base provider interface
-│   │   │   ├── camply_provider.py    # Camply integration
-│   │   │   └── sanmateo_provider.py  # Custom crawler example
-│   │   ├── models.py            # Data models
-│   │   └── utils.py             # Utilities
-│   ├── requirements.txt
-│   └── .env.example
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── SearchForm.jsx
-│   │   │   └── ResultsDisplay.jsx
-│   │   ├── App.jsx
-│   │   └── index.js
-│   ├── package.json
-│   └── .env.example
-└── README.md
+├── backend/                      # Python FastAPI 后端
+│   ├── app/                      # 应用核心代码
+│   │   ├── main.py               # FastAPI 主应用
+│   │   ├── database.py           # 数据库配置
+│   │   ├── db_models.py          # SQLAlchemy 模型
+│   │   ├── auth.py               # JWT 认证
+│   │   ├── tasks.py              # RQ 后台任务
+│   │   ├── providers/            # 营地供应商集成
+│   │   └── routers/              # API 路由
+│   ├── alembic/                  # 数据库迁移
+│   ├── logs/                     # 日志文件
+│   ├── start_infrastructure.sh   # 启动基础设施
+│   ├── start_api.sh              # 启动 API 服务器
+│   ├── start_worker.sh           # 启动 RQ Worker
+│   ├── stop_services.sh          # 停止服务
+│   └── 📚 文档/
+│       ├── README.md             # 后端文档
+│       ├── DEVELOPER.md          # 开发者指南 ⭐
+│       ├── API_USAGE.md          # API 使用文档
+│       └── DESIGN.md             # 系统设计文档
+│
+└── frontend/                     # React 前端
+    ├── src/
+    │   ├── App.js                # 主应用
+    │   ├── Login.js              # 登录页面
+    │   ├── Register.js           # 注册页面
+    │   ├── TaskList.js           # 任务列表
+    │   └── AdminDashboard.js     # 管理后台
+    └── public/
 ```
 
-## Quick Start
+## 🚀 快速开始
 
-### Prerequisites
-- Python 3.9+
+### 前提条件
+
+- Python 3.12+
+- PostgreSQL 15
+- Redis
 - Node.js 16+
-- camply installed: `pip install camply`
+- Homebrew (macOS)
 
-### Backend Setup
+### 1. 安装后端服务
 
 ```bash
 cd backend
-python -m venv campsite-env
-source campsite-env/bin/activate  # On Windows: campsite-env\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+./setup_services.sh
 ```
 
-Backend will run on `http://localhost:8000`
+这会自动安装 PostgreSQL、Redis，创建数据库并配置环境。
 
-### Frontend Setup
+### 2. 启动后端服务
+
+**推荐方式（3个终端窗口）：**
+
+终端 1 - 基础设施：
+```bash
+cd backend
+./start_infrastructure.sh
+```
+
+终端 2 - API 服务器：
+```bash
+cd backend
+./start_api.sh
+```
+
+终端 3 - 后台任务处理器：
+```bash
+cd backend
+./start_worker.sh
+```
+
+**优势：**
+- ✅ 实时查看日志
+- ✅ 避免 camply 输出格式问题
+- ✅ 方便调试
+
+### 3. 启动前端
+
+打开新终端窗口：
 
 ```bash
 cd frontend
-yarn install
-yarn start
+npm install
+npm start
 ```
 
-Frontend will run on `http://localhost:3000`
+访问 http://localhost:3000
 
-## API Endpoints
+### 4. 访问服务
 
-### Get Supported Providers
-```
-GET /api/providers
-Response: ["ReserveCalifornia", "Recreation.gov", "SanMateoCounty", ...]
-```
+- **前端界面**: http://localhost:3000
+- **后端 API**: http://localhost:8000
+- **API 文档**: http://localhost:8000/docs
 
-### Search Campgrounds
-```
-GET /api/campgrounds?provider=ReserveCalifornia&search=New Brighton SB
-Response: [
-  {"id": "598", "name": "New Brighton SB - Northern End"},
-  {"id": "597", "name": "New Brighton SB - Southern End"}
-]
+### 5. 停止服务
+
+```bash
+cd backend
+./stop_services.sh
 ```
 
-### Search Availability
-```
-POST /api/availability
-Body: {
-  "provider": "ReserveCalifornia",
-  "campground_id": "598",
-  "nights": 3,
-  "search_days": 365
-}
-Response: [
-  {"start_date": "2025-03-12", "end_date": "2025-03-15", "available": true},
-  {"start_date": "2025-03-13", "end_date": "2025-03-16", "available": true},
-  ...
-]
-```
+## 📖 使用示例
 
-## How It Works
+### 用户注册和登录
 
-1. **User Input**: Enter campground name, select provider, specify nights
-2. **Backend Processing**:
-   - Find campground ID using provider's search API
-   - Scan next 365 days for consecutive available nights
-   - Use camply for supported providers
-   - Use custom crawler for unsupported systems
-3. **Display Results**: Show all available date combinations
+```bash
+# 注册用户
+curl -X POST http://localhost:8000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"pass123"}'
 
-## Adding New Providers
-
-To add a new provider, create a new file in `backend/app/providers/`:
-
-```python
-from .base import BaseProvider
-
-class NewProvider(BaseProvider):
-    def search_campgrounds(self, query: str):
-        # Implementation
-        pass
-
-    def get_availability(self, campground_id: str, start_date: str, end_date: str):
-        # Implementation
-        pass
+# 登录获取 token
+curl -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"pass123"}'
 ```
 
-Register it in `backend/app/providers/__init__.py`.
+### 创建监控任务
 
-## Features
+```bash
+curl -X POST http://localhost:8000/monitoring/tasks \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_token>" \
+  -d '{
+    "provider": "RecreationDotGov",
+    "campground_id": "232448",
+    "campground_name": "Upper Pines Campground",
+    "start_date": "2026-07-01",
+    "end_date": "2026-07-05",
+    "search_mode": "exact"
+  }'
+```
 
-- Search across multiple providers
-- Find all available date combinations for specified nights
-- Support for both camply-supported and custom systems
-- Extensible plugin architecture
-- Clean, modern UI
+更多示例请查看 [backend/API_USAGE.md](./backend/API_USAGE.md)
 
-## Limitations & Notes
+## 📚 完整文档
 
-- Default search range: 365 days from today
-- Camply guarantees same campsite for entire date range
-- Custom crawlers respect rate limiting and robots.txt
-- Some providers may require authentication
+### 入门文档
+- [backend/README.md](./backend/README.md) - 后端项目概览
+- [backend/DEVELOPER.md](./backend/DEVELOPER.md) - **开发者指南（启动脚本、调试）** ⭐ 必读
 
-## Future Enhancements
+### 使用文档
+- [backend/API_USAGE.md](./backend/API_USAGE.md) - API 使用示例
+- [backend/DESIGN.md](./backend/DESIGN.md) - 系统设计文档
 
-- [ ] Email notifications for availability
-- [ ] Save favorite campgrounds
-- [ ] Continuous monitoring mode
-- [ ] Calendar view of availability
-- [ ] Direct booking links
-- [ ] Mobile app
+## 🏗️ 系统架构
 
-## License
+```
+┌──────────┐
+│  用户    │
+└────┬─────┘
+     │ HTTP/REST
+     ▼
+┌──────────────┐
+│  React       │  前端界面
+│  Frontend    │
+└──────┬───────┘
+       │
+       ▼
+┌──────────────┐
+│  FastAPI     │ ──► PostgreSQL (数据存储)
+│  API Server  │
+└──────┬───────┘
+       │ 创建任务
+       ▼
+┌──────────────┐
+│    Redis     │ ◄── 消息队列
+└──────┬───────┘
+       │
+       ▼
+┌──────────────┐
+│  RQ Worker   │ ──► Camply (检查可用性)
+│  后台任务    │
+└──────┬───────┘
+       │
+       ▼
+┌──────────────┐
+│  通知记录    │ ──► PostgreSQL
+└──────────────┘
+```
 
-MIT
+## 🗄️ 数据库设计
 
-## Contributing
+主要表结构：
 
-Contributions welcome! Please open an issue or PR.
+- **users** - 用户账户
+- **monitoring_tasks** - 监控任务
+- **notification_history** - 通知历史
+- **notification_settings** - 通知配置
+- **favorite_campgrounds** - 收藏营地
+
+详细设计请查看 [backend/DESIGN.md](./backend/DESIGN.md)
+
+## 🔐 安全性
+
+- 密码安全：bcrypt 哈希
+- 认证：JWT Token (30分钟有效期)
+- 授权：基于用户的资源隔离
+- SQL 注入防护：SQLAlchemy ORM 参数化查询
+- 环境变量：敏感信息存储在 `.env`
+
+## 🐛 常见问题
+
+### 后端启动问题
+
+**端口被占用：**
+```bash
+lsof -ti:8000 | xargs kill -9
+```
+
+**PostgreSQL 未运行：**
+```bash
+brew services start postgresql@15
+```
+
+**Redis 未运行：**
+```bash
+brew services start redis
+```
+
+### Camply 解析错误
+
+如果遇到 `ValueError: invalid literal for int()` 错误，请使用推荐的前台启动方式（3个终端窗口）。
+
+详细说明请查看 [backend/DEVELOPER.md](./backend/DEVELOPER.md)
+
+## 🔮 未来计划
+
+### Phase 2
+- [ ] Email 通知支持
+- [ ] Pushover 通知支持
+- [ ] 定时调度（每小时自动检查）
+
+### Phase 3
+- [ ] WebSocket 实时通知
+- [ ] 营地收藏功能增强
+- [ ] 移动端适配
+
+### Phase 4
+- [ ] 多用户协作
+- [ ] 营地推荐系统
+- [ ] 价格追踪
+
+## 📄 许可证
+
+MIT License
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+## 📞 联系方式
+
+如有问题，请查阅文档或提交 Issue。
+
+---
+
+**开始使用：**
+1. 运行 `cd backend && ./setup_services.sh` 安装
+2. 运行 `./start_infrastructure.sh` 启动基础设施
+3. 在两个终端分别运行 `./start_api.sh` 和 `./start_worker.sh`
+4. 运行 `cd ../frontend && npm install && npm start` 启动前端
+5. 访问 http://localhost:3000 开始使用
+6. 阅读 [backend/DEVELOPER.md](./backend/DEVELOPER.md) 了解详细信息
